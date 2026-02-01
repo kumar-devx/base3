@@ -1,0 +1,434 @@
+
+jakejones305
+Jan 09, 11:45 PM
+What I need
+I'm training Rocket League AI bots using reinforcement learning. Right now I'm using RocketSim (https://github.com/ZealanL/RocketSim) which simulates the game physics, but it runs on CPU and that's my bottleneck. I've got dual RTX 5090s sitting there not doing much during simulation.
+I want someone to port RocketSim to CUDA so I can run thousands of game simulations in parallel on GPU instead.
+What RocketSim does
+
+Ball physics (bouncing, spin, gravity)
+Car physics (driving, jumping, flipping, boosting, flying)
+Collisions between cars, ball, and the arena walls/floor/ceiling
+Boost pads, goals, demos, all that stuff
+
+It's all open source C++ so you can dig through it.
+What I'm hoping for
+
+CUDA version that can step a ton of environments at once
+Returns states as batched tensors I can feed into my neural network
+Accuracy close enough to the original that my bots still play properly
+Ideally 1M+ steps per second on one GPU
+
+I'm flexible on how we do this
+Happy to start with a proof of concept—like just get the ball physics working on GPU first, make sure the approach is solid, then expand from there. Milestone payments are fine.
+Before you reach out
+Take a look at the RocketSim code and let me know:
+
+Have you done anything like this before?
+How would you approach it?
+Rough idea on time and cost?
+
+Cheers!
+
+Me
+Jan 09, 11:46 PM
+Hello, I hope you are doing well.
+
+jakejones305
+Jan 09, 11:47 PM
+Hello!
+
+Me
+Jan 09, 11:48 PM
+Give me some time to review your requirements.
+
+jakejones305
+Jan 09, 11:51 PM
+Okay thank you
+
+Me
+Jan 09, 11:55 PM
+Hi, I’ve reviewed RocketSim and I’ve worked on GPU-accelerated physics and RL simulation before.
+I’d approach this by redesigning RocketSim into a data-oriented CUDA pipeline (SoA), stepping thousands of environments in parallel and returning batched tensors for training.
+I suggest starting with a GPU proof-of-concept (ball physics + arena collisions) to validate accuracy and performance, then expanding to full car physics and collisions in milestones.
+Rough timeline: 1–2 weeks for PoC, 6–10 weeks for a full playable GPU simulator.
+
+Happy to discuss scope, milestones, and budget.
+Let me know if you’d like to proceed.
+
+jakejones305
+Jan 10, 12:00 AM
+Sounds good, your approach makes sense. Before we nail down scope, here's the training framework I'm using that calls RocketSim: https://github.com/ZealanL/GigaLearnCPP-Leak
+Worth taking a look so the CUDA version integrates smoothly with how training currently works. Would integration into this framework be something you could handle as part of the project, or would that be a separate phase?
+Happy to start with the ball physics PoC and go from there. What's your rate / budget estimate for the PoC vs the full project?
+
+Me
+Jan 10, 12:04 AM
+Yes, integrating with GigaLearnCPP is absolutely something I can handle as part of the project. I’ll take a look at how RocketSim is currently stepped, how states/actions are passed, and make sure the CUDA simulator exposes a compatible (or improved) batched interface so your training loop doesn’t need major rewrites. That wouldn’t need to be a separate phase.
+
+For budget/rates:
+Ball physics GPU PoC (arena collisions + batching): $1.5k–$2.5k, ~1–2 weeks
+
+Full GPU simulator integrated with GigaLearnCPP: roughly $12k–$18k, milestone-based, depending on depth (collisions, demos, edge cases, optimizations)
+
+Starting with the PoC makes sense to validate performance and integration before scaling up. Happy to proceed that way.
+
+Me
+Jan 10, 12:14 AM
+Are you there??
+
+jakejones305
+Jan 10, 12:14 AM
+Yes I am just trying to figure it out.
+
+jakejones305
+Jan 10, 12:14 AM
+I cannot afford 12-18k
+
+jakejones305
+Jan 10, 12:15 AM
+so possibly may have to do this in another direction
+
+jakejones305
+Jan 10, 12:15 AM
+You say you worked on Rocketsim before? What did you previously do with it?
+
+jakejones305
+Jan 10, 12:16 AM
+RL Simmulation*
+
+Me
+Jan 10, 12:21 AM
+I want to be clear: I haven’t worked on RocketSim specifically before, but I have worked on RL simulation engines and GPU-accelerated physics with similar structure (many parallel envs, fixed timestep, batched states).
+
+Given budget limits, a full GPU rewrite may not make sense right now. A small ball-physics GPU PoC or a partial acceleration / hybrid approach would be a safer first step to see if the gains are worth it.
+
+Happy to keep this lightweight and explore options that fit your budget
+
+jakejones305
+Jan 10, 12:24 AM
+I’m running GigaLearnCPP and only hitting 77k steps/second. ZealanL (the author) apparently hit 2M SPS with the same stack. So there’s a huge gap somewhere in my setup.
+Here’s what I’m working with:
+	∙	Dual RTX 5090s (cloud server)
+- rtx 5070 (personal pc)
+	∙	64GB RAM
+	∙	GigaLearnCPP: https://github.com/ZealanL/GigaLearnCPP-Leak
+	∙	RocketSim: https://github.com/ZealanL/RocketSim
+Would you be able to:
+	1.	Profile where the bottlenecks actually are
+	2.	Optimize for max throughput
+	3.	Get dual GPU working properly if it isn’t
+What would something like this cost? I’m guessing it’s way less than a full CUDA rewrite but could still get me major gains.
+
+jakejones305
+Jan 10, 12:24 AM
+Actually zeleanL managed to get 2million sps per second. Hopefully you’d be able to figure this out
+
+jakejones305
+Jan 10, 12:25 AM
+Zelean did this with a 3070gpu
+
+Me
+Jan 10, 12:26 AM
+Yes, I’m aware — ZealanL’s ~2M SPS result on a 3070 shows there’s a lot of headroom with the right design. That kind of throughput usually comes from heavy parallelism, simplified physics paths, and tight data-oriented layouts.
+
+Given that baseline, I’m confident I could investigate and replicate a similar approach (or improve on it) on newer GPUs, starting with a small PoC to understand exactly where the gains come from before scaling further.
+
+Happy to dig into how he achieved it and take it from there.
+
+jakejones305
+Jan 10, 12:36 AM
+That sounds great. What kind of time scale would this take and costs?
+
+Me
+Jan 10, 12:39 AM
+If we keep the scope focused and incremental:
+
+Investigation + ball-physics GPU PoC: ~1 week, $500–$800
+(replicate the high-throughput approach and validate SPS/accuracy)
+
+Expand toward usable training sim (partial physics): 3–5 weeks, $2k–$4k, milestone-based
+
+This way we first prove we can hit the performance numbers before committing to anything bigger.
+
+jakejones305
+Jan 10, 12:46 AM
+This is more affordable for Me
+Me
+Jan 10, 12:46 AM
+So, how can we proceed??
+
+jakejones305
+Jan 10, 12:47 AM
+How would you like to proceed?
+
+Me
+Jan 10, 12:52 AM
+We will proceed with milestones.
+
+jakejones305
+Jan 10, 12:53 AM
+sounds good, what would you start on first/
+
+jakejones305
+Jan 10, 12:53 AM
+?
+
+Me
+Jan 10, 12:53 AM
+Here's your custom offer
+
+$800
+I will help you in c sharp, c, cpp, java, python, cuda, socket programming, desktop app
+Implement ball physics (gravity, spin, bounces, arena collisions) on GPU. Batched environment stepping compatible with GigaLearnCPP. Validate throughput (~2M SPS) and basic accuracy.
+
+Read more
+Your offer includes
+
+10 Days Delivery
+
+View order
+Me
+Jan 10, 12:54 AM
+This is for the milestone one after this we go for the next.
+
+jakejones305
+Jan 10, 12:56 AM
+Can you explain how this differs from building rocketsimCUDA?
+As your still implementing ball pysics on gpu please
+
+Me
+Jan 10, 1:00 AM
+2 – Car Kinematics + Boost
+2 weeks
+$800–$1.5k
+
+3 – Full Collision System
+2–3 weeks
+$1.2k–$2k
+
+4 – Integration + Optimization
+1–2 weeks
+$800–$1.5k
+
+5 – Full Features / Edge Cases (Optional)
+1–2 weeks
+$500–$1k
+
+Like this we can proceed
+
+jakejones305
+Jan 10, 1:02 AM
+We we need a new collission system?
+is this what it takes to just optimize
+
+Me
+Jan 10, 1:03 AM
+Replied
+
+jakejones305
+
+Jan 10, 12:56 AM
+
+Can you explain how this differs from building rocketsimCUDA? As your still implementing ball pysics on gpu please
+
+RocketSimCUDA = all-in-one GPU rewrite from the start, while our approach is incremental GPU acceleration, starting with ball physics PoC and expanding in steps.
+
+Me
+Jan 10, 1:04 AM
+Replied
+
+jakejones305
+
+Jan 10, 1:02 AM
+
+We we need a new collission system? is this what it takes to just optimize
+
+Yes, to hit GPU-scale performance, we do need a new, GPU-friendly collision system. RocketSim’s CPU collisions are sequential and don’t map well to thousands of parallel environments.
+
+For the PoC, we only implement ball collisions, which is much simpler, and later we can expand to full car–ball/car–car collisions.
+
+jakejones305
+Jan 10, 1:08 AM
+Would you be willing to do steps 1-4 for 2,000?
+
+Me
+Jan 10, 1:09 AM
+You mean complete?? All the steps?? Or except one because after step one we still have 4 steps of development.
+
+jakejones305
+Jan 10, 1:10 AM
+All except the (optional) step
+
+Me
+Jan 10, 1:13 AM
+I will do 2800 for the step one 800 then for all other steps 2000. Is it okay for you?? Because the project is really advanced and time taken. I hope you will understand.
+
+jakejones305
+Jan 10, 1:13 AM
+Yes this is okay for Me
+jakejones305
+Jan 10, 1:14 AM
+Please confirm what steps you will do for 2800
+
+jakejones305
+Jan 10, 1:14 AM
+so I can forward this to my business partner
+
+Me
+Jan 10, 1:17 AM
+1 – PoC: Ball Physics on GPU
+Implement ball physics (gravity, spin, bounces, arena collisions) on GPU. Batched environment stepping compatible with GigaLearnCPP. Validate throughput (~2M SPS) and basic accuracy.
+10 Days
+$800
+
+2 – Car Kinematics + Boost
+Implement car movement, jumping, boosting, flipping on GPU. Integrate batched states. No car–car collisions yet.
+2 weeks
+$800
+
+3 – Full Collision System
+Implement car–ball, car–car, wall/arena collisions, demos, goal detection. Performance tuning for parallel environments.
+2–3 weeks
+$700
+
+4 – Integration + Optimization
+Full integration with GigaLearnCPP, maximize SPS, optional mixed-precision/memory optimization.
+1–2 weeks
+$500
+
+Edited
+
+jakejones305
+Jan 10, 1:19 AM
+So based off what I was told, Zelean managed to get 2m sps with a 3070.
+Hopefully this should be higher as I have a rtx 5070 on my personal PC and I also have dual rtx 5090s on my server. Unfortunately Gigalearn is not compatible with dual gpus currently. Hopefully you can fix this also
+
+jakejones305
+Jan 10, 1:19 AM
+I will need constant updates throughout this please.
+
+Me
+Jan 10, 1:21 AM
+Replied
+
+jakejones305
+
+Jan 10, 1:19 AM
+
+So based off what I was told, Zelean managed to get 2m sps with a 3070. Hopefully this should be higher as I have a rtx 5070 on my personal PC and I also have dual rtx 5090s on my server. Unfortunately Gigalearn is not compatible with dual gpus currently. Hopefully you can fix this also
+
+Yes, with your RTX 5070 and dual RTX 5090s, we should be able to exceed Zealan’s 2M SPS on a 3070.
+
+Regarding multi-GPU support: we can design the GPU simulator so it can run batched environments across multiple GPUs, and I can make it compatible with GigaLearnCPP. That would let you utilize both GPUs efficiently, even if the current framework doesn’t natively support dual-GPU training.
+
+Me
+Jan 10, 1:21 AM
+Replied
+
+jakejones305
+
+Jan 10, 1:19 AM
+
+I will need constant updates throughout this please.
+
+And Absolutely! I’ll provide regular updates and progress reports throughout the project
+
+jakejones305
+Jan 10, 1:22 AM
+Please send through the first payment
+
+jakejones305
+Jan 10, 1:23 AM
+Will this also increase the iteration time?
+When I train the bot using gigalearn?
+
+jakejones305
+Jan 10, 1:23 AM
+Decrease**
+
+Me
+Jan 10, 1:24 AM
+Replied
+Me
+Jan 10, 12:53 AM
+
+Custom offer
+
+here is the custom offer.
+
+jakejones305
+Jan 10, 1:25 AM
+I have placed the order thank you.
+
+Me
+Jan 10, 1:26 AM
+Yes, moving the simulation to GPU and batching thousands of environments will significantly decrease iteration time when training your bot with GigaLearnCPP.
+
+So overall, your bot will train much faster per wall-clock time.
+
+Me
+Jan 10, 1:26 AM
+Replied
+
+jakejones305
+
+Jan 10, 1:25 AM
+
+I have placed the order thank you.
+
+Thank you for the order. Will update you asap.
+
+jakejones305
+Jan 10, 1:27 AM
+Amazing thank you, I will forward hearing from you.
+
+jakejones305
+Jan 10, 1:27 AM
+I look forward hearing from you*
+
+Me
+Jan 10, 1:28 AM
+Okay 👍
+
+jakejones305
+Jan 11, 3:10 AM
+Have you began the project?
+Have you found anything interesting regarding the project?
+
+Me
+Jan 11, 8:04 AM
+Sorry to say, I still didn't begin the project due to the tight deadline of another project. Hopefully it will be done by tomorrow, then I will start the project.
+
+jakejones305
+Jan 12, 8:56 AM
+That’s okay hopefully you can start tomorrow 🙏
+
+Me
+Jan 12, 1:32 PM
+Yes
+
+Me
+Jan 12, 1:33 PM
+Don't worry I will complete it within the given deadline.
+
+jakejones305
+Jan 12, 7:24 PM
+Thank you
+
+jakejones305
+Jan 14, 10:12 PM
+Hey man have you made any progress with our project?
+Any issues or do you still feel confident with this task?
+
+Me
+Jan 14, 11:00 PM
+yes, I did some progress, I will update you by tomorrow with a prototype
+
+Me
+Jan 14, 11:01 PM
+no there's no issue and yes I am confident with this task
+
+jakejones305
+Jan 14, 11:19 PM
+perfect thank you
