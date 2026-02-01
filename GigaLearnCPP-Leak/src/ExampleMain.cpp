@@ -96,7 +96,7 @@ void StepCallback(Learner* learner, const std::vector<GameState>& states, Report
 int main(int argc, char* argv[]) {
 	// Initialize RocketSim with collision meshes
 	// Change this path to point to your meshes!
-	RocketSim::Init("/home/ramesh/Desktop/base3/collision_meshes/soccar");
+	RocketSim::Init("base3/collision_meshes");
 
 	// Make configuration for the learner
 	LearnerConfig cfg = {};
