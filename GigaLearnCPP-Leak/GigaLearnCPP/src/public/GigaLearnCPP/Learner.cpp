@@ -44,10 +44,18 @@ GGL::Learner::Learner(EnvCreateFn envCreateFn, LearnerConfig config, StepCallbac
 
 	torch::manual_seed(config.randomSeed);
 
+	const bool cudaAvailable = torch::cuda::is_available();
+	const int cudaDeviceCount = cudaAvailable ? torch::cuda::device_count() : 0;
+	RG_LOG("\tTorch CUDA available: " << cudaAvailable << ", device count: " << cudaDeviceCount << ", requested deviceType: " << static_cast<int>(config.deviceType));
+
 	at::Device device = at::Device(at::kCPU);
+	if (config.deviceType == LearnerDeviceType::GPU_CUDA && !cudaAvailable) {
+		RG_ERR_CLOSE("Learner::Learner(): deviceType is GPU_CUDA but torch reports CUDA unavailable. Verify libtorch has CUDA and drivers are installed.");
+	}
+
 	if (
 		config.deviceType == LearnerDeviceType::GPU_CUDA || 
-		(config.deviceType == LearnerDeviceType::AUTO && torch::cuda::is_available())
+		(config.deviceType == LearnerDeviceType::AUTO && cudaAvailable)
 		) {
 		RG_LOG("\tUsing CUDA GPU device...");
 
@@ -62,13 +70,13 @@ GGL::Learner::Learner(EnvCreateFn envCreateFn, LearnerConfig config, StepCallbac
 			deviceTestFailed = true;
 		}
 
-		if (!torch::cuda::is_available() || deviceTestFailed)
+		if (!cudaAvailable || deviceTestFailed)
 			RG_ERR_CLOSE(
 				"Learner::Learner(): Can't use CUDA GPU because " <<
-				(torch::cuda::is_available() ? "libtorch cannot access the GPU" : "CUDA is not available to libtorch") << ".\n" <<
+				(cudaAvailable ? "libtorch cannot access the GPU" : "CUDA is not available to libtorch") << ".\n" <<
 				"Make sure your libtorch comes with CUDA support, and that CUDA is installed properly."
 			)
-		device = at::Device(at::kCUDA);
+		device = at::Device(at::kCUDA, 0);
 	} else {
 		RG_LOG("\tUsing CPU device...");
 		device = at::Device(at::kCPU);
