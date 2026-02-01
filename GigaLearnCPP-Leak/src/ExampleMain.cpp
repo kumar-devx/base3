@@ -96,12 +96,12 @@ void StepCallback(Learner* learner, const std::vector<GameState>& states, Report
 int main(int argc, char* argv[]) {
 	// Initialize RocketSim with collision meshes
 	// Change this path to point to your meshes!
-	RocketSim::Init("/root/workspace/base3/collision_meshes/soccar");
+	RocketSim::Init("/root/workspace/base3/collision_meshes");
 
 	// Make configuration for the learner
 	LearnerConfig cfg = {};
 
-	cfg.deviceType = LearnerDeviceType::CPU;
+	cfg.deviceType = LearnerDeviceType::GPU_CUDA;
 
 	cfg.tickSkip = 8;
 	cfg.actionDelay = cfg.tickSkip - 1; // Normal value in other RLGym frameworks
